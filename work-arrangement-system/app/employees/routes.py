@@ -8,6 +8,12 @@ from app.employees.schemas import (
     EmployeeResponse
 )
 
+from datetime import date
+from fastapi import Query
+from app.work_arrangements.scheduling.assignment_models import (
+    ShiftAssignment
+)
+
 router = APIRouter(
     prefix="/employees",
     tags=["Employees"]
@@ -37,3 +43,24 @@ def get_employees(
     db: Session = Depends(get_db)
 ):
     return db.query(Employee).all()
+
+@router.get("/{employee_id}/is-working-day")
+def is_working_day(
+    employee_id: int,
+    target_date: date = Query(...),
+    db: Session = Depends(get_db)
+):
+    shift_assignment = (
+        db.query(ShiftAssignment)
+        .filter(
+            ShiftAssignment.employee_id == employee_id,
+            ShiftAssignment.work_date == target_date
+        )
+        .first()
+    )
+
+    return {
+        "employee_id": employee_id,
+        "date": target_date,
+        "is_working_day": shift_assignment is not None
+    }
